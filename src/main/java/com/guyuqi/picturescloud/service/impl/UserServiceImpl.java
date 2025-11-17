@@ -17,6 +17,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
 
+import static com.guyuqi.picturescloud.constant.UserConstant.USER_LOGIN_STATE;
+import static com.guyuqi.picturescloud.exception.ErrorCode.NOT_LOGIN_ERROR;
+
 /**
  * @author GuYuqi
  * @description 针对表【user(用户)】的数据库操作Service实现
@@ -119,6 +122,24 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         LoginUserVO loginUserVO = new LoginUserVO();
         BeanUtil.copyProperties(user, loginUserVO);
         return loginUserVO;
+    }
+
+    /**
+     * 获取当前登录用户
+     * @param request
+     * @return
+     */
+    @Override
+    public User getLoginUser(HttpServletRequest request) {
+        // 判断是否登录
+        Object userObj = request.getSession().getAttribute(USER_LOGIN_STATE);
+        User currentUser = (User) userObj;
+        ThrowUtils.throwIf(currentUser == null || currentUser.getId() == null, NOT_LOGIN_ERROR);
+        // 从数据库中查询
+        Long userId = currentUser.getId();
+        currentUser = this.getById(userId);
+        ThrowUtils.throwIf(currentUser == null, new BusinessException(NOT_LOGIN_ERROR));
+        return currentUser;
     }
 }
 

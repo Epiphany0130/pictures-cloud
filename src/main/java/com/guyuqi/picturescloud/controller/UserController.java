@@ -6,9 +6,11 @@ import com.guyuqi.picturescloud.dto.UserLoginRequest;
 import com.guyuqi.picturescloud.dto.UserRegisterRequest;
 import com.guyuqi.picturescloud.exception.ErrorCode;
 import com.guyuqi.picturescloud.exception.ThrowUtils;
+import com.guyuqi.picturescloud.model.entity.User;
 import com.guyuqi.picturescloud.model.vo.LoginUserVO;
 import com.guyuqi.picturescloud.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.boot.autoconfigure.graphql.GraphQlProperties;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -44,6 +46,17 @@ public class UserController {
         String userPassword = userLoginRequest.getUserPassword();
         LoginUserVO loginUserVO = userService.userLogin(userAccount, userPassword, request);
         return ResultUtils.success(loginUserVO);
+    }
+
+    /**
+     * 获取当前登录用户
+     * @param request
+     * @return
+     */
+    @GetMapping("/get/login")
+    public BaseResponse<LoginUserVO> getLoginUser(HttpServletRequest request) {
+        User loginUser = userService.getLoginUser(request);
+        return ResultUtils.success(userService.getLoginUserVO(loginUser));
     }
 
 }
