@@ -5,9 +5,11 @@ server:
 spring:
   application:
     name: pictures-cloud
+  profiles:
+    active: local
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306
+    url: jdbc:mysql://localhost:3306/pictures_cloud
     username: ${MY_USERNAME}
     password: ${MY_PASSWORD}
 mybatis-plus:
@@ -24,7 +26,7 @@ mybatis-plus:
 knife4j:
   enable: true
   openapi:
-    title: "????"
+    title: 接口文档
     version: 1.0
     group:
       default:

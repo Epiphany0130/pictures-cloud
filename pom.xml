@@ -9,7 +9,7 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.guyuqi</groupId>
-    <artifactId>pictures-cloud</artifactId>
+    <artifactId>pictures-cloud-backend</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>pictures-cloud</name>
     <description>pictures-cloud</description>
