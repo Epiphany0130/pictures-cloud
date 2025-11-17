@@ -1,28 +1,35 @@
 package com.guyuqi.picturescloud.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.guyuqi.picturescloud.exception.BusinessException;
 import com.guyuqi.picturescloud.exception.ErrorCode;
 import com.guyuqi.picturescloud.exception.ThrowUtils;
 import com.guyuqi.picturescloud.model.entity.User;
 import com.guyuqi.picturescloud.model.enums.UserRoleEnum;
+import com.guyuqi.picturescloud.model.vo.LoginUserVO;
 import com.guyuqi.picturescloud.service.UserService;
 import com.guyuqi.picturescloud.mapper.UserMapper;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
 
 /**
-* @author GuYuqi
-* @description 针对表【user(用户)】的数据库操作Service实现
-* @createDate 2025-11-16 19:40:44
-*/
+ * @author GuYuqi
+ * @description 针对表【user(用户)】的数据库操作Service实现
+ * @createDate 2025-11-16 19:40:44
+ */
 @Service
+@Slf4j
 public class UserServiceImpl extends ServiceImpl<UserMapper, User>
-    implements UserService{
+        implements UserService {
 
     /**
      * 用户注册
+     *
      * @param userAccount
      * @param userPassword
      * @param checkPassword
@@ -49,13 +56,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         user.setUserName("无名");
         user.setUserRole(UserRoleEnum.USER.getValue());
         boolean saveResult = this.save(user);
-        ThrowUtils.throwIf(!saveResult, ErrorCode.PARAMS_ERROR,  "注册失败，数据库错误");
+        ThrowUtils.throwIf(!saveResult, ErrorCode.PARAMS_ERROR, "注册失败，数据库错误");
         // 返回
         return user.getId();
     }
 
     /**
      * 密码加密
+     *
      * @param userPassword
      * @return
      */
@@ -64,6 +72,53 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         // 加盐
         final String SALT = "ThisIsAGoodPictureCloudAPPTheAuthorIsMrGuNowIWantToAddSomeSaltToPassword";
         return DigestUtils.md5DigestAsHex((SALT + userPassword).getBytes());
+    }
+
+    /**
+     * 用户登录
+     *
+     * @param userAccount
+     * @param userPassword
+     * @param request
+     * @return
+     */
+    @Override
+    public LoginUserVO userLogin(String userAccount, String userPassword, HttpServletRequest request) {
+        // 1. 校验
+        ThrowUtils.throwIf(StrUtil.hasBlank(userAccount, userPassword), ErrorCode.PARAMS_ERROR, "参数为空");
+        ThrowUtils.throwIf(userAccount.length() < 4, ErrorCode.PARAMS_ERROR, "用户账号过短");
+        ThrowUtils.throwIf(userPassword.length() < 8, ErrorCode.PARAMS_ERROR, "用户密码过短");
+        // 2. 加密
+        String encryptPassword = getEncryptPassword(userPassword);
+        // 3. 查询用户
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("userAccount", userAccount);
+        queryWrapper.eq("userPassword", encryptPassword);
+        User user = this.baseMapper.selectOne(queryWrapper);
+        // 4. 用户不存在
+        if (user == null) {
+            log.info("user login failed, userAccount cannot match userPassword");
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户不存在或密码错误");
+        }
+        // 5. 记录登录态
+        request.getSession().setAttribute("user_login_state", user);
+        return this.getLoginUserVO(user);
+    }
+
+    /**
+     * 获得脱敏后的登录用户信息
+     *
+     * @param user
+     * @return
+     */
+    @Override
+    public LoginUserVO getLoginUserVO(User user) {
+        if (user == null) {
+            return null;
+        }
+        LoginUserVO loginUserVO = new LoginUserVO();
+        BeanUtil.copyProperties(user, loginUserVO);
+        return loginUserVO;
     }
 }
 
